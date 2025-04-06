@@ -20,15 +20,24 @@ const ChatHeader: React.FC = () => {
     state, 
     resetTokenCount, 
     setApiKey, 
-    setGeminiApiKey, 
+    setGeminiApiKey,
+    setOpenAIApiKey,
+    setClaudeApiKey,
+    setDeepSeekApiKey,
     clearConversation, 
     apiKey, 
-    geminiApiKey 
+    geminiApiKey,
+    openaiApiKey,
+    claudeApiKey,
+    deepseekApiKey
   } = useChat();
   
   const [apiDialogOpen, setApiDialogOpen] = useState(false);
   const [newApiKey, setNewApiKey] = useState(apiKey || '');
   const [newGeminiApiKey, setNewGeminiApiKey] = useState(geminiApiKey || '');
+  const [newOpenAIApiKey, setNewOpenAIApiKey] = useState(openaiApiKey || '');
+  const [newClaudeApiKey, setNewClaudeApiKey] = useState(claudeApiKey || '');
+  const [newDeepSeekApiKey, setNewDeepSeekApiKey] = useState(deepseekApiKey || '');
   
   const handleSaveApiKeys = () => {
     if (newApiKey !== apiKey) {
@@ -37,6 +46,18 @@ const ChatHeader: React.FC = () => {
     
     if (newGeminiApiKey !== geminiApiKey) {
       setGeminiApiKey(newGeminiApiKey);
+    }
+
+    if (newOpenAIApiKey !== openaiApiKey) {
+      setOpenAIApiKey(newOpenAIApiKey);
+    }
+
+    if (newClaudeApiKey !== claudeApiKey) {
+      setClaudeApiKey(newClaudeApiKey);
+    }
+
+    if (newDeepSeekApiKey !== deepseekApiKey) {
+      setDeepSeekApiKey(newDeepSeekApiKey);
     }
     
     setApiDialogOpen(false);
@@ -91,9 +112,12 @@ const ChatHeader: React.FC = () => {
           </DialogHeader>
           
           <Tabs defaultValue="groq">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="groq">Groq API</TabsTrigger>
-              <TabsTrigger value="gemini">Gemini API (Fallback)</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="groq">Groq</TabsTrigger>
+              <TabsTrigger value="gemini">Gemini</TabsTrigger>
+              <TabsTrigger value="openai">OpenAI</TabsTrigger>
+              <TabsTrigger value="claude">Claude</TabsTrigger>
+              <TabsTrigger value="deepseek">DeepSeek</TabsTrigger>
             </TabsList>
             
             <TabsContent value="groq" className="py-4">
@@ -104,6 +128,7 @@ const ChatHeader: React.FC = () => {
                 onChange={(e) => setNewApiKey(e.target.value)} 
                 placeholder="Enter your Groq API key"
                 className="mt-1"
+                type="password"
               />
               <p className="text-xs text-muted-foreground mt-2">
                 You can get your API key from <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" className="underline">Groq Console</a>
@@ -118,9 +143,55 @@ const ChatHeader: React.FC = () => {
                 onChange={(e) => setNewGeminiApiKey(e.target.value)} 
                 placeholder="Enter your Gemini API key"
                 className="mt-1"
+                type="password"
               />
               <p className="text-xs text-muted-foreground mt-2">
                 You can get your API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline">Google AI Studio</a>
+              </p>
+            </TabsContent>
+
+            <TabsContent value="openai" className="py-4">
+              <Label htmlFor="openai-api-key">OpenAI API Key</Label>
+              <Input 
+                id="openai-api-key" 
+                value={newOpenAIApiKey} 
+                onChange={(e) => setNewOpenAIApiKey(e.target.value)} 
+                placeholder="Enter your OpenAI API key"
+                className="mt-1"
+                type="password"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                You can get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="underline">OpenAI Platform</a>
+              </p>
+            </TabsContent>
+
+            <TabsContent value="claude" className="py-4">
+              <Label htmlFor="claude-api-key">Claude API Key</Label>
+              <Input 
+                id="claude-api-key" 
+                value={newClaudeApiKey} 
+                onChange={(e) => setNewClaudeApiKey(e.target.value)} 
+                placeholder="Enter your Claude API key"
+                className="mt-1"
+                type="password"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                You can get your API key from <a href="https://console.anthropic.com/keys" target="_blank" rel="noreferrer" className="underline">Anthropic Console</a>
+              </p>
+            </TabsContent>
+
+            <TabsContent value="deepseek" className="py-4">
+              <Label htmlFor="deepseek-api-key">DeepSeek API Key</Label>
+              <Input 
+                id="deepseek-api-key" 
+                value={newDeepSeekApiKey} 
+                onChange={(e) => setNewDeepSeekApiKey(e.target.value)} 
+                placeholder="Enter your DeepSeek API key"
+                className="mt-1"
+                type="password"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                You can get your API key from <a href="https://platform.deepseek.com/" target="_blank" rel="noreferrer" className="underline">DeepSeek Platform</a>
               </p>
             </TabsContent>
           </Tabs>

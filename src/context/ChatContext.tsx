@@ -1,7 +1,12 @@
+
 import React, { createContext, useContext, useEffect, useReducer } from 'react';
-import { ChatState, Message, ModelOption, AVAILABLE_MODELS } from '@/types/chat';
+import { ChatState, Message, ModelOption, ModelProvider, AVAILABLE_MODELS } from '@/types/chat';
 import { groqService } from '@/services/api';
 import { geminiService } from '@/services/geminiApi';
+import { openaiService } from '@/services/openaiApi';
+import { claudeService } from '@/services/claudeApi';
+import { deepseekService } from '@/services/deepseekApi';
+import { modelSelector } from '@/services/modelSelector';
 import { toast } from 'sonner';
 
 const TOKEN_LIMIT = 500000;
@@ -13,8 +18,7 @@ type ChatAction =
   | { type: 'UPDATE_TOKEN_COUNT'; payload: { prompt: number; completion: number } }
   | { type: 'RESET_TOKEN_COUNT' }
   | { type: 'CHANGE_MODEL'; payload: ModelOption }
-  | { type: 'SET_API_KEY'; payload: string }
-  | { type: 'SET_GEMINI_API_KEY'; payload: string }
+  | { type: 'SET_ACTIVE_PROVIDER'; payload: ModelProvider }
   | { type: 'SET_USING_FALLBACK'; payload: boolean }
   | { type: 'CLEAR_CONVERSATION' };
 
@@ -25,9 +29,15 @@ interface ChatContextProps {
   changeModel: (model: ModelOption) => void;
   setApiKey: (key: string) => void;
   setGeminiApiKey: (key: string) => void;
+  setOpenAIApiKey: (key: string) => void;
+  setClaudeApiKey: (key: string) => void;
+  setDeepSeekApiKey: (key: string) => void;
   clearConversation: () => void;
   apiKey: string;
   geminiApiKey: string;
+  openaiApiKey: string;
+  claudeApiKey: string;
+  deepseekApiKey: string;
 }
 
 const defaultState: ChatState = {
@@ -39,6 +49,7 @@ const defaultState: ChatState = {
     limit: TOKEN_LIMIT,
   },
   model: AVAILABLE_MODELS[0],
+  activeProvider: 'groq',
   usingFallback: false
 };
 
@@ -80,11 +91,18 @@ const chatReducer = (state: ChatState, action: ChatAction): ChatState => {
           total: 0,
           remaining: TOKEN_LIMIT,
         },
+        usingFallback: false,
       };
     case 'CHANGE_MODEL':
       return {
         ...state,
         model: action.payload,
+      };
+    case 'SET_ACTIVE_PROVIDER':
+      return {
+        ...state,
+        activeProvider: action.payload,
+        lastProvider: state.activeProvider,
       };
     case 'SET_USING_FALLBACK':
       return {
@@ -106,6 +124,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [state, dispatch] = useReducer(chatReducer, defaultState);
   const [apiKey, setApiKeyState] = React.useState<string>(groqService.getApiKey() || '');
   const [geminiApiKey, setGeminiApiKeyState] = React.useState<string>(geminiService.getApiKey() || '');
+  const [openaiApiKey, setOpenAIApiKeyState] = React.useState<string>(openaiService.getApiKey() || '');
+  const [claudeApiKey, setClaudeApiKeyState] = React.useState<string>(claudeService.getApiKey() || '');
+  const [deepseekApiKey, setDeepSeekApiKeyState] = React.useState<string>(deepseekService.getApiKey() || '');
   
   useEffect(() => {
     // Load conversation from localStorage
@@ -113,6 +134,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const savedTokenCount = localStorage.getItem('chat_token_count');
     const savedModel = localStorage.getItem('chat_model');
     const savedUsingFallback = localStorage.getItem('chat_using_fallback');
+    const savedActiveProvider = localStorage.getItem('chat_active_provider');
     
     if (savedConversation) {
       try {
@@ -156,6 +178,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
+    if (savedActiveProvider) {
+      try {
+        const activeProvider = JSON.parse(savedActiveProvider) as ModelProvider;
+        dispatch({ type: 'SET_ACTIVE_PROVIDER', payload: activeProvider });
+      } catch (error) {
+        console.error('Error parsing saved active provider:', error);
+      }
+    }
+
     if (savedUsingFallback) {
       try {
         const usingFallback = JSON.parse(savedUsingFallback) as boolean;
@@ -173,8 +204,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('chat_token_count', JSON.stringify(state.tokenCount));
       localStorage.setItem('chat_model', JSON.stringify(state.model));
       localStorage.setItem('chat_using_fallback', JSON.stringify(state.usingFallback));
+      localStorage.setItem('chat_active_provider', JSON.stringify(state.activeProvider));
     }
-  }, [state.messages, state.tokenCount, state.model, state.usingFallback]);
+  }, [state.messages, state.tokenCount, state.model, state.usingFallback, state.activeProvider]);
 
   const setApiKey = (key: string) => {
     groqService.setApiKey(key);
@@ -188,9 +220,35 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success('Gemini API key saved');
   };
 
+  const setOpenAIApiKey = (key: string) => {
+    openaiService.setApiKey(key);
+    setOpenAIApiKeyState(key);
+    toast.success('OpenAI API key saved');
+  };
+
+  const setClaudeApiKey = (key: string) => {
+    claudeService.setApiKey(key);
+    setClaudeApiKeyState(key);
+    toast.success('Claude API key saved');
+  };
+
+  const setDeepSeekApiKey = (key: string) => {
+    deepseekService.setApiKey(key);
+    setDeepSeekApiKeyState(key);
+    toast.success('DeepSeek API key saved');
+  };
+
   const sendMessage = async (content: string) => {
-    if (state.tokenCount.remaining <= 0 && !state.usingFallback && !geminiApiKey) {
-      toast.error('Token limit reached. Please set a Gemini API key as fallback.');
+    // Check for available providers
+    const availableProviders: ModelProvider[] = [];
+    if (apiKey) availableProviders.push('groq');
+    if (geminiApiKey) availableProviders.push('gemini');
+    if (openaiApiKey) availableProviders.push('openai');
+    if (claudeApiKey) availableProviders.push('claude');
+    if (deepseekApiKey) availableProviders.push('deepseek');
+
+    if (availableProviders.length === 0) {
+      toast.error('No API keys configured. Please add at least one API key.');
       return;
     }
 
@@ -217,36 +275,49 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userMessage
       ];
 
-      // Try with Groq API first, if token limit is not reached
-      let response;
-      let usedFallback = state.usingFallback;
+      // Determine the best provider for this message
+      const { provider, reason } = modelSelector.selectModel(
+        [...state.messages, userMessage],
+        availableProviders
+      );
       
-      if (state.tokenCount.remaining > 0 && !state.usingFallback) {
-        try {
+      dispatch({ type: 'SET_ACTIVE_PROVIDER', payload: provider });
+      
+      // Show toast with model selection
+      toast.info(`Using ${provider.toUpperCase()} for this message`, {
+        description: reason
+      });
+
+      // Select appropriate model for the provider
+      let selectedModel = state.model;
+      if (provider === 'openai') {
+        selectedModel = AVAILABLE_MODELS.find(m => m.id === 'gpt4o') || selectedModel;
+      } else if (provider === 'claude') {
+        selectedModel = AVAILABLE_MODELS.find(m => m.id === 'claude3') || selectedModel;
+      } else if (provider === 'deepseek') {
+        selectedModel = AVAILABLE_MODELS.find(m => m.id === 'deepseek') || selectedModel;
+      }
+
+      // Use the appropriate service based on the provider
+      let response;
+      switch (provider) {
+        case 'groq':
           response = await groqService.chat(messagesToSend, state.model.value);
-        } catch (groqError) {
-          console.error('Error with Groq API:', groqError);
-          
-          // If we have Gemini API key, fall back to it
-          if (geminiApiKey) {
-            toast.info('Switching to Gemini API as fallback');
-            try {
-              response = await geminiService.chat(messagesToSend, state.model.value);
-              usedFallback = true;
-              dispatch({ type: 'SET_USING_FALLBACK', payload: true });
-            } catch (geminiError) {
-              throw geminiError; // If Gemini also fails, throw the error
-            }
-          } else {
-            throw groqError; // Re-throw if no fallback available
-          }
-        }
-      } else if (geminiApiKey) {
-        // We're already using fallback or Groq token limit reached - use Gemini directly
-        response = await geminiService.chat(messagesToSend, state.model.value);
-        usedFallback = true;
-      } else {
-        throw new Error('Token limit reached and no fallback API key configured');
+          break;
+        case 'gemini':
+          response = await geminiService.chat(messagesToSend, state.model.value);
+          break;
+        case 'openai':
+          response = await openaiService.chat(messagesToSend, selectedModel.value);
+          break;
+        case 'claude':
+          response = await claudeService.chat(messagesToSend, selectedModel.value);
+          break;
+        case 'deepseek':
+          response = await deepseekService.chat(messagesToSend, selectedModel.value);
+          break;
+        default:
+          throw new Error('Unknown provider');
       }
 
       const assistantMessage: Message = {
@@ -264,7 +335,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       dispatch({ type: 'ADD_ASSISTANT_MESSAGE', payload: assistantMessage });
       
       // Only update token count if using Groq (primary)
-      if (!usedFallback) {
+      if (provider === 'groq') {
         dispatch({ 
           type: 'UPDATE_TOKEN_COUNT', 
           payload: { 
@@ -272,6 +343,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             completion: response.usage.completion_tokens 
           } 
         });
+      }
+      
+      // Set fallback flag if we're not using Groq
+      if (provider !== 'groq') {
+        dispatch({ type: 'SET_USING_FALLBACK', payload: true });
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to get response');
@@ -307,9 +383,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         changeModel, 
         setApiKey,
         setGeminiApiKey,
+        setOpenAIApiKey,
+        setClaudeApiKey,
+        setDeepSeekApiKey,
         clearConversation,
         apiKey,
-        geminiApiKey
+        geminiApiKey,
+        openaiApiKey,
+        claudeApiKey,
+        deepseekApiKey
       }}
     >
       {children}

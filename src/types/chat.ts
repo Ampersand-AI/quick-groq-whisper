@@ -20,6 +20,8 @@ export interface ChatState {
     limit: number;
   };
   model: ModelOption;
+  activeProvider: ModelProvider;
+  lastProvider?: ModelProvider;
   usingFallback: boolean;
 }
 
@@ -52,6 +54,8 @@ export interface ApiResponse {
   };
 }
 
+export type ModelProvider = 'groq' | 'gemini' | 'openai' | 'claude' | 'deepseek';
+
 export const AVAILABLE_MODELS: ModelOption[] = [
   {
     id: 'mixtral-8x7b',
@@ -66,5 +70,26 @@ export const AVAILABLE_MODELS: ModelOption[] = [
     value: 'llama3-8b-8192',
     description: 'Meta\'s optimized 8B parameter model',
     maxTokens: 8192,
+  },
+  {
+    id: 'gpt4o',
+    name: 'GPT-4o',
+    value: 'gpt-4o',
+    description: 'OpenAI\'s most capable multimodal model',
+    maxTokens: 8192,
+  },
+  {
+    id: 'claude3',
+    name: 'Claude 3 Opus',
+    value: 'claude-3-opus-20240229',
+    description: 'Anthropic\'s most capable language model',
+    maxTokens: 4096,
+  },
+  {
+    id: 'deepseek',
+    name: 'DeepSeek Chat',
+    value: 'deepseek-chat',
+    description: 'DeepSeek\'s large language model',
+    maxTokens: 4096,
   },
 ];
