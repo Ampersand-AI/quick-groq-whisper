@@ -27,7 +27,7 @@ export class GroqService {
     const apiKey = this.getApiKey();
     
     if (!apiKey) {
-      throw new Error("API key is required");
+      throw new Error("Groq API key is required");
     }
 
     // Map model ID to valid Groq model ID
@@ -54,14 +54,14 @@ export class GroqService {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error?.message || 'An error occurred with the Groq API');
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'An error occurred with the Groq API');
       }
 
       return await response.json();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error calling Groq API:', error);
-      throw error;
+      throw new Error(`Groq API error: ${error.message || 'Unknown error'}`);
     }
   }
 }

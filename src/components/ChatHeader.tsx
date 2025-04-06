@@ -11,9 +11,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Settings, RefreshCw, Trash } from 'lucide-react';
+import { Settings, RefreshCw, Trash, Key, Trash2 } from 'lucide-react';
 import { useChat } from '@/context/ChatContext';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const ChatHeader: React.FC = () => {
   const { 
@@ -33,34 +32,43 @@ const ChatHeader: React.FC = () => {
   } = useChat();
   
   const [apiDialogOpen, setApiDialogOpen] = useState(false);
-  const [newApiKey, setNewApiKey] = useState(apiKey || '');
-  const [newGeminiApiKey, setNewGeminiApiKey] = useState(geminiApiKey || '');
-  const [newOpenAIApiKey, setNewOpenAIApiKey] = useState(openaiApiKey || '');
-  const [newClaudeApiKey, setNewClaudeApiKey] = useState(claudeApiKey || '');
-  const [newDeepSeekApiKey, setNewDeepSeekApiKey] = useState(deepseekApiKey || '');
+  const [apiKeys, setApiKeys] = useState({
+    groq: apiKey || '',
+    gemini: geminiApiKey || '',
+    openai: openaiApiKey || '',
+    claude: claudeApiKey || '',
+    deepseek: deepseekApiKey || ''
+  });
   
   const handleSaveApiKeys = () => {
-    if (newApiKey !== apiKey) {
-      setApiKey(newApiKey);
+    if (apiKeys.groq !== apiKey) {
+      setApiKey(apiKeys.groq);
     }
     
-    if (newGeminiApiKey !== geminiApiKey) {
-      setGeminiApiKey(newGeminiApiKey);
+    if (apiKeys.gemini !== geminiApiKey) {
+      setGeminiApiKey(apiKeys.gemini);
     }
 
-    if (newOpenAIApiKey !== openaiApiKey) {
-      setOpenAIApiKey(newOpenAIApiKey);
+    if (apiKeys.openai !== openaiApiKey) {
+      setOpenAIApiKey(apiKeys.openai);
     }
 
-    if (newClaudeApiKey !== claudeApiKey) {
-      setClaudeApiKey(newClaudeApiKey);
+    if (apiKeys.claude !== claudeApiKey) {
+      setClaudeApiKey(apiKeys.claude);
     }
 
-    if (newDeepSeekApiKey !== deepseekApiKey) {
-      setDeepSeekApiKey(newDeepSeekApiKey);
+    if (apiKeys.deepseek !== deepseekApiKey) {
+      setDeepSeekApiKey(apiKeys.deepseek);
     }
     
     setApiDialogOpen(false);
+  };
+
+  const clearApiKey = (provider: string) => {
+    setApiKeys({
+      ...apiKeys,
+      [provider]: ''
+    });
   };
 
   return (
@@ -103,102 +111,164 @@ const ChatHeader: React.FC = () => {
       </div>
 
       <Dialog open={apiDialogOpen} onOpenChange={setApiDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>API Settings</DialogTitle>
+            <DialogTitle>API Keys</DialogTitle>
             <DialogDescription>
-              Configure your API keys for NeuralVibe.
+              Configure your API keys for NeuralVibe. Missing keys will be skipped during processing.
             </DialogDescription>
           </DialogHeader>
           
-          <Tabs defaultValue="groq">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="groq">Groq</TabsTrigger>
-              <TabsTrigger value="gemini">Gemini</TabsTrigger>
-              <TabsTrigger value="openai">OpenAI</TabsTrigger>
-              <TabsTrigger value="claude">Claude</TabsTrigger>
-              <TabsTrigger value="deepseek">DeepSeek</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="groq" className="py-4">
-              <Label htmlFor="groq-api-key">Groq API Key</Label>
+          <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto">
+            {/* Groq API Key */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="groq-api-key">Groq API Key</Label>
+                {apiKeys.groq && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => clearApiKey('groq')}
+                    className="h-7 w-7 p-0"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">Remove Groq API Key</span>
+                  </Button>
+                )}
+              </div>
               <Input 
                 id="groq-api-key" 
-                value={newApiKey} 
-                onChange={(e) => setNewApiKey(e.target.value)} 
+                value={apiKeys.groq} 
+                onChange={(e) => setApiKeys({...apiKeys, groq: e.target.value})} 
                 placeholder="Enter your Groq API key"
                 className="mt-1"
                 type="password"
               />
-              <p className="text-xs text-muted-foreground mt-2">
-                You can get your API key from <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" className="underline">Groq Console</a>
+              <p className="text-xs text-muted-foreground">
+                <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" className="underline">Get Groq API key</a>
               </p>
-            </TabsContent>
-            
-            <TabsContent value="gemini" className="py-4">
-              <Label htmlFor="gemini-api-key">Gemini API Key</Label>
+            </div>
+
+            {/* Gemini API Key */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="gemini-api-key">Gemini API Key</Label>
+                {apiKeys.gemini && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => clearApiKey('gemini')}
+                    className="h-7 w-7 p-0"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">Remove Gemini API Key</span>
+                  </Button>
+                )}
+              </div>
               <Input 
                 id="gemini-api-key" 
-                value={newGeminiApiKey} 
-                onChange={(e) => setNewGeminiApiKey(e.target.value)} 
+                value={apiKeys.gemini} 
+                onChange={(e) => setApiKeys({...apiKeys, gemini: e.target.value})} 
                 placeholder="Enter your Gemini API key"
                 className="mt-1"
                 type="password"
               />
-              <p className="text-xs text-muted-foreground mt-2">
-                You can get your API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline">Google AI Studio</a>
+              <p className="text-xs text-muted-foreground">
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline">Get Gemini API key</a>
               </p>
-            </TabsContent>
+            </div>
 
-            <TabsContent value="openai" className="py-4">
-              <Label htmlFor="openai-api-key">OpenAI API Key</Label>
+            {/* OpenAI API Key */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="openai-api-key">OpenAI API Key</Label>
+                {apiKeys.openai && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => clearApiKey('openai')}
+                    className="h-7 w-7 p-0"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">Remove OpenAI API Key</span>
+                  </Button>
+                )}
+              </div>
               <Input 
                 id="openai-api-key" 
-                value={newOpenAIApiKey} 
-                onChange={(e) => setNewOpenAIApiKey(e.target.value)} 
+                value={apiKeys.openai} 
+                onChange={(e) => setApiKeys({...apiKeys, openai: e.target.value})} 
                 placeholder="Enter your OpenAI API key"
                 className="mt-1"
                 type="password"
               />
-              <p className="text-xs text-muted-foreground mt-2">
-                You can get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="underline">OpenAI Platform</a>
+              <p className="text-xs text-muted-foreground">
+                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="underline">Get OpenAI API key</a>
               </p>
-            </TabsContent>
+            </div>
 
-            <TabsContent value="claude" className="py-4">
-              <Label htmlFor="claude-api-key">Claude API Key</Label>
+            {/* Claude API Key */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="claude-api-key">Claude API Key</Label>
+                {apiKeys.claude && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => clearApiKey('claude')}
+                    className="h-7 w-7 p-0"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">Remove Claude API Key</span>
+                  </Button>
+                )}
+              </div>
               <Input 
                 id="claude-api-key" 
-                value={newClaudeApiKey} 
-                onChange={(e) => setNewClaudeApiKey(e.target.value)} 
+                value={apiKeys.claude} 
+                onChange={(e) => setApiKeys({...apiKeys, claude: e.target.value})} 
                 placeholder="Enter your Claude API key"
                 className="mt-1"
                 type="password"
               />
-              <p className="text-xs text-muted-foreground mt-2">
-                You can get your API key from <a href="https://console.anthropic.com/keys" target="_blank" rel="noreferrer" className="underline">Anthropic Console</a>
+              <p className="text-xs text-muted-foreground">
+                <a href="https://console.anthropic.com/keys" target="_blank" rel="noreferrer" className="underline">Get Claude API key</a>
               </p>
-            </TabsContent>
+            </div>
 
-            <TabsContent value="deepseek" className="py-4">
-              <Label htmlFor="deepseek-api-key">DeepSeek API Key</Label>
+            {/* DeepSeek API Key */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="deepseek-api-key">DeepSeek API Key</Label>
+                {apiKeys.deepseek && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => clearApiKey('deepseek')}
+                    className="h-7 w-7 p-0"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">Remove DeepSeek API Key</span>
+                  </Button>
+                )}
+              </div>
               <Input 
                 id="deepseek-api-key" 
-                value={newDeepSeekApiKey} 
-                onChange={(e) => setNewDeepSeekApiKey(e.target.value)} 
+                value={apiKeys.deepseek} 
+                onChange={(e) => setApiKeys({...apiKeys, deepseek: e.target.value})} 
                 placeholder="Enter your DeepSeek API key"
                 className="mt-1"
                 type="password"
               />
-              <p className="text-xs text-muted-foreground mt-2">
-                You can get your API key from <a href="https://platform.deepseek.com/" target="_blank" rel="noreferrer" className="underline">DeepSeek Platform</a>
+              <p className="text-xs text-muted-foreground">
+                <a href="https://platform.deepseek.com/" target="_blank" rel="noreferrer" className="underline">Get DeepSeek API key</a>
               </p>
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
           
           <DialogFooter>
             <Button onClick={() => setApiDialogOpen(false)} variant="outline">Cancel</Button>
-            <Button onClick={handleSaveApiKeys}>Save</Button>
+            <Button onClick={handleSaveApiKeys}>Save All Keys</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
