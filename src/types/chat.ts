@@ -20,6 +20,7 @@ export interface ChatState {
     limit: number;
   };
   model: ModelOption;
+  usingFallback: boolean;
 }
 
 export interface ModelOption {

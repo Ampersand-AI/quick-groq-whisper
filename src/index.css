@@ -77,6 +77,16 @@
   }
 }
 
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-br from-black via-gray-700 to-gray-400 dark:from-white dark:via-gray-300 dark:to-gray-500 bg-clip-text text-transparent;
+  }
+  
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent;
+  }
+}
+
 .message-appear {
   animation: message-appear 0.3s ease forwards;
 }

@@ -1,7 +1,7 @@
-
 import React, { createContext, useContext, useEffect, useReducer } from 'react';
 import { ChatState, Message, ModelOption, AVAILABLE_MODELS } from '@/types/chat';
 import { groqService } from '@/services/api';
+import { geminiService } from '@/services/geminiApi';
 import { toast } from 'sonner';
 
 const TOKEN_LIMIT = 500000;
@@ -14,6 +14,8 @@ type ChatAction =
   | { type: 'RESET_TOKEN_COUNT' }
   | { type: 'CHANGE_MODEL'; payload: ModelOption }
   | { type: 'SET_API_KEY'; payload: string }
+  | { type: 'SET_GEMINI_API_KEY'; payload: string }
+  | { type: 'SET_USING_FALLBACK'; payload: boolean }
   | { type: 'CLEAR_CONVERSATION' };
 
 interface ChatContextProps {
@@ -22,8 +24,10 @@ interface ChatContextProps {
   resetTokenCount: () => void;
   changeModel: (model: ModelOption) => void;
   setApiKey: (key: string) => void;
+  setGeminiApiKey: (key: string) => void;
   clearConversation: () => void;
   apiKey: string;
+  geminiApiKey: string;
 }
 
 const defaultState: ChatState = {
@@ -34,7 +38,8 @@ const defaultState: ChatState = {
     remaining: TOKEN_LIMIT,
     limit: TOKEN_LIMIT,
   },
-  model: AVAILABLE_MODELS[0]
+  model: AVAILABLE_MODELS[0],
+  usingFallback: false
 };
 
 const ChatContext = createContext<ChatContextProps | undefined>(undefined);
@@ -81,6 +86,12 @@ const chatReducer = (state: ChatState, action: ChatAction): ChatState => {
         ...state,
         model: action.payload,
       };
+    case 'SET_USING_FALLBACK':
+      return {
+        ...state,
+        usingFallback: action.payload,
+      };
+      
     case 'CLEAR_CONVERSATION':
       return {
         ...state,
@@ -94,12 +105,14 @@ const chatReducer = (state: ChatState, action: ChatAction): ChatState => {
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(chatReducer, defaultState);
   const [apiKey, setApiKeyState] = React.useState<string>(groqService.getApiKey() || '');
+  const [geminiApiKey, setGeminiApiKeyState] = React.useState<string>(geminiService.getApiKey() || '');
   
   useEffect(() => {
     // Load conversation from localStorage
     const savedConversation = localStorage.getItem('chat_conversation');
     const savedTokenCount = localStorage.getItem('chat_token_count');
     const savedModel = localStorage.getItem('chat_model');
+    const savedUsingFallback = localStorage.getItem('chat_using_fallback');
     
     if (savedConversation) {
       try {
@@ -142,6 +155,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Error parsing saved model:', error);
       }
     }
+
+    if (savedUsingFallback) {
+      try {
+        const usingFallback = JSON.parse(savedUsingFallback) as boolean;
+        dispatch({ type: 'SET_USING_FALLBACK', payload: usingFallback });
+      } catch (error) {
+        console.error('Error parsing saved fallback status:', error);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -150,18 +172,25 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('chat_conversation', JSON.stringify(state.messages));
       localStorage.setItem('chat_token_count', JSON.stringify(state.tokenCount));
       localStorage.setItem('chat_model', JSON.stringify(state.model));
+      localStorage.setItem('chat_using_fallback', JSON.stringify(state.usingFallback));
     }
-  }, [state.messages, state.tokenCount, state.model]);
+  }, [state.messages, state.tokenCount, state.model, state.usingFallback]);
 
   const setApiKey = (key: string) => {
     groqService.setApiKey(key);
     setApiKeyState(key);
-    toast.success('API key saved');
+    toast.success('Groq API key saved');
+  };
+
+  const setGeminiApiKey = (key: string) => {
+    geminiService.setApiKey(key);
+    setGeminiApiKeyState(key);
+    toast.success('Gemini API key saved');
   };
 
   const sendMessage = async (content: string) => {
-    if (state.tokenCount.remaining <= 0) {
-      toast.error('Token limit reached');
+    if (state.tokenCount.remaining <= 0 && !state.usingFallback && !geminiApiKey) {
+      toast.error('Token limit reached. Please set a Gemini API key as fallback.');
       return;
     }
 
@@ -188,7 +217,37 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userMessage
       ];
 
-      const response = await groqService.chat(messagesToSend, state.model.value);
+      // Try with Groq API first, if token limit is not reached
+      let response;
+      let usedFallback = state.usingFallback;
+      
+      if (state.tokenCount.remaining > 0 && !state.usingFallback) {
+        try {
+          response = await groqService.chat(messagesToSend, state.model.value);
+        } catch (groqError) {
+          console.error('Error with Groq API:', groqError);
+          
+          // If we have Gemini API key, fall back to it
+          if (geminiApiKey) {
+            toast.info('Switching to Gemini API as fallback');
+            try {
+              response = await geminiService.chat(messagesToSend, state.model.value);
+              usedFallback = true;
+              dispatch({ type: 'SET_USING_FALLBACK', payload: true });
+            } catch (geminiError) {
+              throw geminiError; // If Gemini also fails, throw the error
+            }
+          } else {
+            throw groqError; // Re-throw if no fallback available
+          }
+        }
+      } else if (geminiApiKey) {
+        // We're already using fallback or Groq token limit reached - use Gemini directly
+        response = await geminiService.chat(messagesToSend, state.model.value);
+        usedFallback = true;
+      } else {
+        throw new Error('Token limit reached and no fallback API key configured');
+      }
 
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
@@ -203,13 +262,17 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       dispatch({ type: 'ADD_ASSISTANT_MESSAGE', payload: assistantMessage });
-      dispatch({ 
-        type: 'UPDATE_TOKEN_COUNT', 
-        payload: { 
-          prompt: response.usage.prompt_tokens, 
-          completion: response.usage.completion_tokens 
-        } 
-      });
+      
+      // Only update token count if using Groq (primary)
+      if (!usedFallback) {
+        dispatch({ 
+          type: 'UPDATE_TOKEN_COUNT', 
+          payload: { 
+            prompt: response.usage.prompt_tokens, 
+            completion: response.usage.completion_tokens 
+          } 
+        });
+      }
     } catch (error: any) {
       toast.error(error.message || 'Failed to get response');
       console.error('Error sending message:', error);
@@ -220,6 +283,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const resetTokenCount = () => {
     dispatch({ type: 'RESET_TOKEN_COUNT' });
+    dispatch({ type: 'SET_USING_FALLBACK', payload: false });
     toast.success('Token count reset');
   };
 
@@ -242,8 +306,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resetTokenCount, 
         changeModel, 
         setApiKey,
+        setGeminiApiKey,
         clearConversation,
-        apiKey
+        apiKey,
+        geminiApiKey
       }}
     >
       {children}

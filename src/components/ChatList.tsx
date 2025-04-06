@@ -2,10 +2,13 @@
 import React, { useEffect, useRef } from 'react';
 import { useChat } from '@/context/ChatContext';
 import ChatMessage from './ChatMessage';
+import { format } from 'date-fns';
 
 const ChatList: React.FC = () => {
   const { state } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const currentDate = new Date();
+  const formattedDate = format(currentDate, "MMMM d, yyyy 'at' h:mm a");
   
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -15,9 +18,15 @@ const ChatList: React.FC = () => {
   if (state.messages.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
-        <h2 className="text-2xl font-bold mb-2">Welcome to Groq Chat</h2>
+        <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+          Welcome, User
+        </h2>
+        <p className="text-xs mb-4 bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+          {formattedDate}
+        </p>
         <p className="text-muted-foreground max-w-md">
-          This is a minimalist chat interface powered by Groq API. Start typing below to chat with an AI assistant.
+          This is a minimalist chat interface powered by {state.usingFallback ? "Gemini" : "Groq"} API. 
+          Start typing below to chat with an AI assistant.
         </p>
       </div>
     );

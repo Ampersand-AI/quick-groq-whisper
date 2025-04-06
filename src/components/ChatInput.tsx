@@ -9,11 +9,11 @@ const ChatInput: React.FC = () => {
   const [message, setMessage] = useState('');
   const { sendMessage, state } = useChat();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const isTokenLimitReached = state.tokenCount.remaining <= 0;
+  const isTokenLimitReached = state.tokenCount.remaining <= 0 && !state.usingFallback;
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (message.trim() && !isTokenLimitReached && !state.isLoading) {
+    if (message.trim() && !state.isLoading) {
       sendMessage(message.trim());
       setMessage('');
     }
@@ -43,23 +43,29 @@ const ChatInput: React.FC = () => {
           value={message}
           onChange={e => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={isTokenLimitReached ? "Token limit reached" : "Type a message..."}
+          placeholder={
+            isTokenLimitReached 
+              ? "Groq token limit reached. Set Gemini API key as fallback." 
+              : "Type a message..."
+          }
           className="pr-12 min-h-[50px] max-h-[200px] resize-none"
-          disabled={isTokenLimitReached || state.isLoading}
+          disabled={state.isLoading}
         />
         <Button
           type="submit"
           size="icon"
           className="absolute right-2 top-1/2 -translate-y-1/2"
-          disabled={!message.trim() || isTokenLimitReached || state.isLoading}
+          disabled={!message.trim() || state.isLoading}
         >
           <SendHorizonal className="h-4 w-4" />
         </Button>
       </div>
       <div className="text-xs text-muted-foreground mt-2 flex justify-between">
         <div>
-          {isTokenLimitReached ? (
-            <span className="text-destructive">Token limit reached</span>
+          {state.usingFallback ? (
+            <span className="text-amber-500">Using Gemini API (fallback)</span>
+          ) : isTokenLimitReached ? (
+            <span className="text-destructive">Groq token limit reached</span>
           ) : (
             <span>Tokens remaining: {state.tokenCount.remaining.toLocaleString()} of {state.tokenCount.limit.toLocaleString()}</span>
           )}
