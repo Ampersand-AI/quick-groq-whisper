@@ -30,6 +30,13 @@ export class GroqService {
       throw new Error("API key is required");
     }
 
+    // Map model ID to valid Groq model ID
+    let groqModel = model;
+    if (model === 'mixtral-8x7b-32768') {
+      // Use LLaMA 3 as replacement for deprecated Mixtral
+      groqModel = 'llama3-70b-8192';
+    }
+
     try {
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -38,7 +45,7 @@ export class GroqService {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: model,
+          model: groqModel,
           messages: messages.map(msg => ({
             role: msg.role,
             content: msg.content

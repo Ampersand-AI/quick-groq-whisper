@@ -58,17 +58,10 @@ export type ModelProvider = 'groq' | 'gemini' | 'openai' | 'claude' | 'deepseek'
 
 export const AVAILABLE_MODELS: ModelOption[] = [
   {
-    id: 'mixtral-8x7b',
-    name: 'Mixtral 8x7B',
-    value: 'mixtral-8x7b-32768',
-    description: 'A powerful open-source mixture-of-experts model',
-    maxTokens: 32768,
-  },
-  {
     id: 'llama3',
     name: 'LLaMA 3',
-    value: 'llama3-8b-8192',
-    description: 'Meta\'s optimized 8B parameter model',
+    value: 'llama3-70b-8192',
+    description: 'Meta\'s optimized 70B parameter model',
     maxTokens: 8192,
   },
   {
@@ -91,5 +84,12 @@ export const AVAILABLE_MODELS: ModelOption[] = [
     value: 'deepseek-chat',
     description: 'DeepSeek\'s large language model',
     maxTokens: 4096,
+  },
+  {
+    id: 'gemini',
+    name: 'Gemini Pro',
+    value: 'gemini-1.5-pro-latest',
+    description: 'Google\'s advanced multimodal model',
+    maxTokens: 8192,
   },
 ];
