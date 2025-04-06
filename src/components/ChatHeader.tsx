@@ -1,13 +1,6 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -18,16 +11,14 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Settings, ChevronDown, RefreshCw, Trash } from 'lucide-react';
+import { Settings, RefreshCw, Trash } from 'lucide-react';
 import { useChat } from '@/context/ChatContext';
-import { ModelOption, AVAILABLE_MODELS } from '@/types/chat';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const ChatHeader: React.FC = () => {
   const { 
     state, 
     resetTokenCount, 
-    changeModel, 
     setApiKey, 
     setGeminiApiKey, 
     clearConversation, 
@@ -38,10 +29,6 @@ const ChatHeader: React.FC = () => {
   const [apiDialogOpen, setApiDialogOpen] = useState(false);
   const [newApiKey, setNewApiKey] = useState(apiKey || '');
   const [newGeminiApiKey, setNewGeminiApiKey] = useState(geminiApiKey || '');
-  
-  const handleModelChange = (model: ModelOption) => {
-    changeModel(model);
-  };
   
   const handleSaveApiKeys = () => {
     if (newApiKey !== apiKey) {
@@ -59,7 +46,7 @@ const ChatHeader: React.FC = () => {
     <header className="border-b border-border sticky top-0 bg-background z-10">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
         <h1 className="text-lg font-semibold">
-          {state.usingFallback ? "Gemini Chat" : "Groq Chat"}
+          NeuralVibe
           {state.usingFallback && <span className="text-xs ml-2 text-muted-foreground">(Fallback)</span>}
         </h1>
         
@@ -84,29 +71,6 @@ const ChatHeader: React.FC = () => {
             Clear Chat
           </Button>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                {state.model.name}
-                <ChevronDown className="h-3 w-3 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Select Model</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {AVAILABLE_MODELS.map(model => (
-                <DropdownMenuItem 
-                  key={model.id}
-                  onClick={() => handleModelChange(model)}
-                  className="flex flex-col items-start"
-                >
-                  <span className="font-medium">{model.name}</span>
-                  <span className="text-xs text-muted-foreground">{model.description}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
           <Button 
             variant="ghost" 
             size="icon" 
@@ -122,7 +86,7 @@ const ChatHeader: React.FC = () => {
           <DialogHeader>
             <DialogTitle>API Settings</DialogTitle>
             <DialogDescription>
-              Configure your API keys for the chat application.
+              Configure your API keys for NeuralVibe.
             </DialogDescription>
           </DialogHeader>
           

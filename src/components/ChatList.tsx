@@ -25,8 +25,8 @@ const ChatList: React.FC = () => {
           {formattedDate}
         </p>
         <p className="text-muted-foreground max-w-md">
-          This is a minimalist chat interface powered by {state.usingFallback ? "Gemini" : "Groq"} API. 
-          Start typing below to chat with an AI assistant.
+          This is an AI-powered chat interface by Neural Paths. 
+          Start typing below to chat with NeuralVibe.
         </p>
       </div>
     );
@@ -57,7 +57,7 @@ const ChatList: React.FC = () => {
               </div>
             </div>
             <div className="flex-1">
-              <div className="font-medium">AI is thinking...</div>
+              <div className="font-medium">Neural Vibe is triggered... generating now</div>
             </div>
           </div>
         </div>

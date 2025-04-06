@@ -13,7 +13,7 @@ const ApiKeyForm: React.FC<{ onSubmit: (key: string) => void }> = ({ onSubmit })
   return (
     <div className="h-screen flex flex-col items-center justify-center p-4">
       <div className="max-w-md w-full p-6 bg-card border border-border rounded-lg shadow-sm">
-        <h1 className="text-2xl font-bold mb-6">Welcome to Groq Chat</h1>
+        <h1 className="text-2xl font-bold mb-6">Welcome to NeuralVibe</h1>
         <p className="mb-4 text-muted-foreground">
           To get started, please enter your Groq API key.
         </p>
